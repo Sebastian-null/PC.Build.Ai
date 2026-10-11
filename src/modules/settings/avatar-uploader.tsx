@@ -1,4 +1,44 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import{useRef}from"react";import{useTranslations}from"next-intl";import{updateAvatar}from"./actions";
-export function AvatarUploader({locale,avatarUrl,name}:{locale:"uk"|"en";avatarUrl:string|null;name:string}){const input=useRef<HTMLInputElement>(null);const t=useTranslations("Settings");return <form action={updateAvatar} className="avatar-uploader"><input type="hidden" name="locale" value={locale}/><button type="button" className="avatar-picker" onClick={()=>input.current?.click()} aria-label={t("changeAvatar")}><span>{avatarUrl?<img src={avatarUrl} alt=""/>:name.slice(0,1).toUpperCase()}</span><b>{t("changeAvatar")}</b></button><input ref={input} hidden type="file" name="avatar" accept="image/png,image/jpeg,image/webp" required onChange={event=>{if(event.currentTarget.files?.length)event.currentTarget.form?.requestSubmit()}}/><strong>{name}</strong><small>{t("avatarHint")}</small></form>}
+import { useRef } from "react";
+import { useTranslations } from "next-intl";
+import { updateAvatar } from "./actions";
+export function AvatarUploader({
+  locale,
+  avatarUrl,
+  name,
+}: {
+  locale: "uk" | "en";
+  avatarUrl: string | null;
+  name: string;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const t = useTranslations("Settings");
+  return (
+    <form action={updateAvatar} className="avatar-uploader">
+      <input type="hidden" name="locale" value={locale} />
+      <button
+        type="button"
+        className="avatar-picker"
+        onClick={() => input.current?.click()}
+        aria-label={t("changeAvatar")}
+      >
+        <span>{avatarUrl ? <img src={avatarUrl} alt="" /> : name.slice(0, 1).toUpperCase()}</span>
+        <b>{t("changeAvatar")}</b>
+      </button>
+      <input
+        ref={input}
+        hidden
+        type="file"
+        name="avatar"
+        accept="image/png,image/jpeg,image/webp"
+        required
+        onChange={(event) => {
+          if (event.currentTarget.files?.length) event.currentTarget.form?.requestSubmit();
+        }}
+      />
+      <strong>{name}</strong>
+      <small>{t("avatarHint")}</small>
+    </form>
+  );
+}

@@ -1,2 +1,52 @@
-import type{ReactNode}from"react";import{getTranslations,setRequestLocale}from"next-intl/server";import{requireVerifiedUser}from"@/modules/auth/guards";import{Link}from"@/shared/i18n/navigation";import type{AppLocale}from"@/shared/i18n/routing";import{AccountMenu}from"@/modules/settings/account-menu";import{HomeBackLink}from"@/shared/ui/home-back-link";
-export default async function AppLayout({children,modal,params}:{children:ReactNode;modal?:ReactNode;params:Promise<{locale:string}>}){const{locale:rawLocale}=await params;const locale:AppLocale=rawLocale==="uk"?"uk":"en";setRequestLocale(locale);const{user,supabase}=await requireVerifiedUser(locale);const t=await getTranslations("AppNav");const{data:profile}=await supabase.from("profiles").select("username,display_name,avatar_path").eq("id",user.id).single();const avatarUrl=profile?.avatar_path?supabase.storage.from("avatars").getPublicUrl(profile.avatar_path).data.publicUrl:null;const name=profile?.display_name||profile?.username||user.email||"User";return <div className="app-shell"><header className="app-topbar"><div className="topbar-left"><Link href="/dashboard" className="wordmark">PCBuilder<span>AI</span></Link><HomeBackLink/></div><div className="topbar-account"><div className="topbar-plan"><span>{t("freePlan")}</span><strong>{t("quota",{count:5})}</strong></div><AccountMenu name={name} avatarUrl={avatarUrl}/></div></header><div className="app-content">{children}</div>{modal}</div>}
+import type { ReactNode } from "react";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { requireVerifiedUser } from "@/modules/auth/guards";
+import { Link } from "@/shared/i18n/navigation";
+import type { AppLocale } from "@/shared/i18n/routing";
+import { AccountMenu } from "@/modules/settings/account-menu";
+import { HomeBackLink } from "@/shared/ui/home-back-link";
+export default async function AppLayout({
+  children,
+  modal,
+  params,
+}: {
+  children: ReactNode;
+  modal?: ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: rawLocale } = await params;
+  const locale: AppLocale = rawLocale === "uk" ? "uk" : "en";
+  setRequestLocale(locale);
+  const { user, supabase } = await requireVerifiedUser(locale);
+  const t = await getTranslations("AppNav");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username,display_name,avatar_path")
+    .eq("id", user.id)
+    .single();
+  const avatarUrl = profile?.avatar_path
+    ? supabase.storage.from("avatars").getPublicUrl(profile.avatar_path).data.publicUrl
+    : null;
+  const name = profile?.display_name || profile?.username || user.email || "User";
+  return (
+    <div className="app-shell">
+      <header className="app-topbar">
+        <div className="topbar-left">
+          <Link href="/dashboard" className="wordmark">
+            PCBuilder<span>AI</span>
+          </Link>
+          <HomeBackLink />
+        </div>
+        <div className="topbar-account">
+          <div className="topbar-plan">
+            <span>{t("freePlan")}</span>
+            <strong>{t("quota", { count: 5 })}</strong>
+          </div>
+          <AccountMenu name={name} avatarUrl={avatarUrl} />
+        </div>
+      </header>
+      <div className="app-content">{children}</div>
+      {modal}
+    </div>
+  );
+}

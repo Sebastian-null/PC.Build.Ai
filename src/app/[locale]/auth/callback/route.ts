@@ -1,2 +1,67 @@
-import{NextResponse,type NextRequest}from"next/server";import{createSupabaseServerClient}from"@/infrastructure/supabase/server";
-export async function GET(request:NextRequest,{params}:{params:Promise<{locale:string}>}){const{locale:rawLocale}=await params;const locale=rawLocale==="uk"?"uk":"en";const code=request.nextUrl.searchParams.get("code");const requestedNext=request.nextUrl.searchParams.get("next");const safeNext=requestedNext?.startsWith(`/${locale}/`)?requestedNext:`/${locale}/dashboard`;if(code){const supabase=await createSupabaseServerClient();const{error}=await supabase.auth.exchangeCodeForSession(code);if(!error){let destination=safeNext;const response=NextResponse.redirect(new URL(destination,request.url));if(safeNext.includes("passwordReset=1"))response.cookies.set("pcbuilder-password-recovery","1",{httpOnly:true,sameSite:"lax",secure:request.nextUrl.protocol==="https:",maxAge:900,path:"/"});if(safeNext.includes("usernameChange=1")){const pending=request.cookies.get("pcbuilder-pending-username")?.value;const{data:{user}}=await supabase.auth.getUser();if(pending&&user&&/^[A-Za-z0-9_]{3,24}$/.test(pending)){const{error:updateError}=await supabase.from("profiles").update({username:pending}).eq("id",user.id);if(!updateError){const{data:limit}=await supabase.from("identity_change_limits").select("change_count,reset_at").eq("user_id",user.id).eq("kind","username").maybeSingle();const count=limit?.reset_at&&new Date(limit.reset_at).getTime()>Date.now()?(limit.change_count??0)+1:1;const now=new Date();await supabase.from("identity_change_limits").upsert({user_id:user.id,kind:"username",change_count:count,last_changed_at:now.toISOString(),reset_at:new Date(now.getTime()+31*86400000).toISOString()})}destination=`/${locale}/settings?usernameChanged=${updateError?"0":"1"}`;response.headers.set("location",new URL(destination,request.url).toString())}response.cookies.delete("pcbuilder-pending-username")}return response}}return NextResponse.redirect(new URL(`/${locale}/login?status=callbackFailed`,request.url))}
+import { NextResponse, type NextRequest } from "next/server";
+import { createSupabaseServerClient } from "@/infrastructure/supabase/server";
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ locale: string }> },
+) {
+  const { locale: rawLocale } = await params;
+  const locale = rawLocale === "uk" ? "uk" : "en";
+  const code = request.nextUrl.searchParams.get("code");
+  const requestedNext = request.nextUrl.searchParams.get("next");
+  const safeNext = requestedNext?.startsWith(`/${locale}/`)
+    ? requestedNext
+    : `/${locale}/dashboard`;
+  if (code) {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      let destination = safeNext;
+      const response = NextResponse.redirect(new URL(destination, request.url));
+      if (safeNext.includes("passwordReset=1"))
+        response.cookies.set("pcbuilder-password-recovery", "1", {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: request.nextUrl.protocol === "https:",
+          maxAge: 900,
+          path: "/",
+        });
+      if (safeNext.includes("usernameChange=1")) {
+        const pending = request.cookies.get("pcbuilder-pending-username")?.value;
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (pending && user && /^[A-Za-z0-9_]{3,24}$/.test(pending)) {
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ username: pending })
+            .eq("id", user.id);
+          if (!updateError) {
+            const { data: limit } = await supabase
+              .from("identity_change_limits")
+              .select("change_count,reset_at")
+              .eq("user_id", user.id)
+              .eq("kind", "username")
+              .maybeSingle();
+            const count =
+              limit?.reset_at && new Date(limit.reset_at).getTime() > Date.now()
+                ? (limit.change_count ?? 0) + 1
+                : 1;
+            const now = new Date();
+            await supabase.from("identity_change_limits").upsert({
+              user_id: user.id,
+              kind: "username",
+              change_count: count,
+              last_changed_at: now.toISOString(),
+              reset_at: new Date(now.getTime() + 31 * 86400000).toISOString(),
+            });
+          }
+          destination = `/${locale}/settings?usernameChanged=${updateError ? "0" : "1"}`;
+          response.headers.set("location", new URL(destination, request.url).toString());
+        }
+        response.cookies.delete("pcbuilder-pending-username");
+      }
+      return response;
+    }
+  }
+  return NextResponse.redirect(new URL(`/${locale}/login?status=callbackFailed`, request.url));
+}

@@ -1,2 +1,106 @@
-import{getTranslations,setRequestLocale}from"next-intl/server";import{requireVerifiedUser}from"@/modules/auth/guards";import{createTopic}from"@/modules/community/actions";import type{AppLocale}from"@/shared/i18n/routing";
-export default async function CommunityPage({params}:{params:Promise<{locale:AppLocale}>}){const{locale}=await params;setRequestLocale(locale);const{supabase}=await requireVerifiedUser(locale);const t=await getTranslations("Forum");const[{data:categories},{data:topics}]=await Promise.all([supabase.from("forum_categories").select("id,slug,title,description,position").eq("language",locale).order("position"),supabase.from("forum_topics").select("id,category_id,title,created_at,updated_at").eq("language",locale).order("updated_at",{ascending:false}).limit(20)]);return <main className="app-page"><header className="app-page-header row"><div><p className="eyebrow">{t("eyebrow")}</p><h1>{t("title")}</h1><p>{t("copy")}</p></div><a href="#new-topic" className="button">{t("newTopic")}</a></header><div className="forum-layout"><section><h2 className="forum-section-title">{t("categories")}</h2><div className="forum-categories">{categories?.map(category=><a href={`/${locale}/community/category/${category.id}`} key={category.id}><span>◎</span><div><h3>{category.title}</h3><p>{category.description}</p></div><b>{topics?.filter(topic=>topic.category_id===category.id).length??0} →</b></a>)}</div><h2 className="forum-section-title recent-title">{t("recent")}</h2><div className="topic-list">{topics?.length?topics.map(topic=><a key={topic.id} href={`/${locale}/community/topic/${topic.id}`}><div><h3>{topic.title}</h3><span>{categories?.find(category=>category.id===topic.category_id)?.title}</span></div><time>{new Intl.DateTimeFormat(locale,{dateStyle:"medium"}).format(new Date(topic.updated_at))}</time></a>):<p className="forum-empty">{t("noTopics")}</p>}</div></section><aside id="new-topic" className="new-topic-card"><h2>{t("createTitle")}</h2><p>{t("createCopy")}</p><form action={createTopic}><input type="hidden" name="locale" value={locale}/><label><span>{t("category")}</span><select name="categoryId" required>{categories?.map(category=><option key={category.id} value={category.id}>{category.title}</option>)}</select></label><label><span>{t("topicTitle")}</span><input name="title" minLength={5} maxLength={140} required/></label><label><span>{t("message")}</span><textarea name="body" minLength={2} maxLength={10000} rows={7} required/></label><button className="button">{t("publish")}</button></form></aside></div></main>}
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { requireVerifiedUser } from "@/modules/auth/guards";
+import { createTopic } from "@/modules/community/actions";
+import type { AppLocale } from "@/shared/i18n/routing";
+export default async function CommunityPage({
+  params,
+}: {
+  params: Promise<{ locale: AppLocale }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const { supabase } = await requireVerifiedUser(locale);
+  const t = await getTranslations("Forum");
+  const [{ data: categories }, { data: topics }] = await Promise.all([
+    supabase
+      .from("forum_categories")
+      .select("id,slug,title,description,position")
+      .eq("language", locale)
+      .order("position"),
+    supabase
+      .from("forum_topics")
+      .select("id,category_id,title,created_at,updated_at")
+      .eq("language", locale)
+      .order("updated_at", { ascending: false })
+      .limit(20),
+  ]);
+  return (
+    <main className="app-page">
+      <header className="app-page-header row">
+        <div>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h1>{t("title")}</h1>
+          <p>{t("copy")}</p>
+        </div>
+        <a href="#new-topic" className="button">
+          {t("newTopic")}
+        </a>
+      </header>
+      <div className="forum-layout">
+        <section>
+          <h2 className="forum-section-title">{t("categories")}</h2>
+          <div className="forum-categories">
+            {categories?.map((category) => (
+              <a href={`/${locale}/community/category/${category.id}`} key={category.id}>
+                <span>◎</span>
+                <div>
+                  <h3>{category.title}</h3>
+                  <p>{category.description}</p>
+                </div>
+                <b>{topics?.filter((topic) => topic.category_id === category.id).length ?? 0} →</b>
+              </a>
+            ))}
+          </div>
+          <h2 className="forum-section-title recent-title">{t("recent")}</h2>
+          <div className="topic-list">
+            {topics?.length ? (
+              topics.map((topic) => (
+                <a key={topic.id} href={`/${locale}/community/topic/${topic.id}`}>
+                  <div>
+                    <h3>{topic.title}</h3>
+                    <span>
+                      {categories?.find((category) => category.id === topic.category_id)?.title}
+                    </span>
+                  </div>
+                  <time>
+                    {new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+                      new Date(topic.updated_at),
+                    )}
+                  </time>
+                </a>
+              ))
+            ) : (
+              <p className="forum-empty">{t("noTopics")}</p>
+            )}
+          </div>
+        </section>
+        <aside id="new-topic" className="new-topic-card">
+          <h2>{t("createTitle")}</h2>
+          <p>{t("createCopy")}</p>
+          <form action={createTopic}>
+            <input type="hidden" name="locale" value={locale} />
+            <label>
+              <span>{t("category")}</span>
+              <select name="categoryId" required>
+                {categories?.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>{t("topicTitle")}</span>
+              <input name="title" minLength={5} maxLength={140} required />
+            </label>
+            <label>
+              <span>{t("message")}</span>
+              <textarea name="body" minLength={2} maxLength={10000} rows={7} required />
+            </label>
+            <button className="button">{t("publish")}</button>
+          </form>
+        </aside>
+      </div>
+    </main>
+  );
+}

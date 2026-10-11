@@ -5,5 +5,8 @@ import { getPublicSupabaseConfig } from "./config";
 
 export function createSupabaseBrowserClient() {
   const config = getPublicSupabaseConfig();
-  return createBrowserClient(config.NEXT_PUBLIC_SUPABASE_URL, config.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+  return createBrowserClient(
+    config.NEXT_PUBLIC_SUPABASE_URL,
+    config.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  );
 }

@@ -25,7 +25,13 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale} data-theme="dark" suppressHydrationWarning>
-      <head><script dangerouslySetInnerHTML={{__html:`try{var t=localStorage.getItem('pcbuilder-theme');if(['dark','black','gray','light'].includes(t))document.documentElement.dataset.theme=t}catch(e){}`}} /></head>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('pcbuilder-theme');if(['dark','black','gray','light'].includes(t))document.documentElement.dataset.theme=t}catch(e){}`,
+          }}
+        />
+      </head>
       <body>
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>

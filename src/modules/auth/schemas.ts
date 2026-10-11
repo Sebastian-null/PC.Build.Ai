@@ -15,7 +15,10 @@ export const signUpSchema = passwordSignInSchema.extend({
 export const magicLinkSchema = z.object({ email: z.email().max(254), locale: localeSchema });
 
 export const onboardingSchema = z.object({
-  username: z.string().trim().regex(/^[A-Za-z0-9_]{3,24}$/),
+  username: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9_]{3,24}$/),
   locale: localeSchema,
   ageConfirmed: z.literal("on"),
   legalAccepted: z.literal("on"),

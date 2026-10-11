@@ -14,10 +14,11 @@ export default async function proxy(request: NextRequest) {
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
-      setAll: (values) => values.forEach(({ name, value, options }) => {
-        request.cookies.set(name, value);
-        response.cookies.set(name, value, options);
-      }),
+      setAll: (values) =>
+        values.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          response.cookies.set(name, value, options);
+        }),
     },
   });
   await supabase.auth.getClaims();

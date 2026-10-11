@@ -1,10 +1,180 @@
 /* eslint-disable @next/next/no-img-element */
-import {getTranslations,setRequestLocale} from "next-intl/server";
-import {requireVerifiedUser} from "@/modules/auth/guards";
-import {toggleBuildFavorite,toggleComponentFavorite} from "@/modules/builds/favorite-actions";
-import {deleteBuilds,renameBuild} from "@/modules/builds/build-actions";
-import {PublishBuildDialog} from "@/modules/builds/publish-build-dialog";
-import {ConfirmSubmitButton} from "@/shared/ui/confirm-submit-button";
-import type {AppLocale} from "@/shared/i18n/routing";
-type ComponentItem={role:string;model:string;image?:string;[key:string]:unknown};type Category={id:string;title:string;description:string};
-export default async function BuildsPage({params}:{params:Promise<{locale:AppLocale}>}){const{locale}=await params;setRequestLocale(locale);const{user,supabase}=await requireVerifiedUser(locale);const t=await getTranslations("Builds");const[{data:allBuilds},{data:favorites},{data:componentFavorites},{data:categoryData}]=await Promise.all([supabase.from("builds").select("id,title,budget_minor,currency,status,visibility,components,created_at,published_topic_id").eq("owner_id",user.id).order("created_at",{ascending:false}),supabase.from("build_favorites").select("build_id").eq("user_id",user.id),supabase.from("component_favorites").select("build_id,component_key").eq("user_id",user.id),supabase.from("forum_categories").select("id,title,description").eq("language",locale).order("position")]);const categories=(categoryData??[])as Category[];const builds=allBuilds?.filter(build=>(build.components as ComponentItem[]).length>=8)??[];const favoriteIds=new Set(favorites?.map(item=>item.build_id)??[]);const componentKeys=new Set(componentFavorites?.map(item=>`${item.build_id}:${item.component_key}`)??[]);return <main className="app-page"><header className="app-page-header row"><div><p className="eyebrow">{t("eyebrow")}</p><h1>{t("title")}</h1><p>{t("copy")}</p></div><a className="button" href={`/${locale}/chat`}>{t("new")}</a></header>{!builds.length?<section className="empty-panel"><span>▦</span><h2>{t("emptyTitle")}</h2><p>{t("emptyCopy")}</p><a className="button" href={`/${locale}/chat`}>{t("emptyAction")}</a></section>:<div className="build-grid compact-build-grid">{builds.map(build=>{const components=build.components as ComponentItem[];return <article className="build-card compact-build-card" key={build.id}><header><span className={`status-pill ${build.status}`}>{t(build.status)}</span><div className="build-card-actions"><span>{build.visibility==="public"?t("public"):t("private")}</span><form action={deleteBuilds}><input type="hidden" name="locale" value={locale}/><input type="hidden" name="buildIds" value={build.id}/><ConfirmSubmitButton className="build-trash-button" title={t("deleteBuild")} aria-label={t("deleteBuild")} message={t("deleteOneConfirm")}>♲</ConfirmSubmitButton></form><form action={toggleBuildFavorite}><input type="hidden" name="locale" value={locale}/><input type="hidden" name="buildId" value={build.id}/><button className={`mini-favorite ${favoriteIds.has(build.id)?"active":""}`}>{favoriteIds.has(build.id)?"★":"☆"}</button></form></div></header><div className="build-title-row"><h2>{build.title}</h2><details className="rename-disclosure"><summary>{t("rename")}</summary><form action={renameBuild}><input type="hidden" name="locale" value={locale}/><input type="hidden" name="buildId" value={build.id}/><input name="title" defaultValue={build.title} minLength={2} maxLength={120} autoFocus/><button>{t("saveName")}</button></form></details></div><strong className="build-price">{new Intl.NumberFormat(locale,{style:"currency",currency:build.currency,maximumFractionDigits:0}).format(build.budget_minor/100)}</strong><details className="component-disclosure"><summary><span>{t("componentCount",{count:components.length})}</span><b>{t("expand")}</b></summary><div className="parts-list">{components.map(part=><div className="build-part-row" key={part.role}>{part.image&&<img src={part.image} alt=""/>}<a href={`/${locale}/builds/${build.id}`}><span>{part.role}</span><b>{part.model}</b></a><form action={toggleComponentFavorite}><input type="hidden" name="locale" value={locale}/><input type="hidden" name="buildId" value={build.id}/><input type="hidden" name="componentKey" value={part.role}/><input type="hidden" name="snapshot" value={JSON.stringify(part)}/><button className={`mini-favorite ${componentKeys.has(`${build.id}:${part.role}`)?"active":""}`}>{componentKeys.has(`${build.id}:${part.role}`)?"★":"☆"}</button></form></div>)}</div></details><footer><span>{new Intl.DateTimeFormat(locale,{dateStyle:"medium"}).format(new Date(build.created_at))}</span><div className="build-footer-actions">{build.published_topic_id?<a href={`/${locale}/community/topic/${build.published_topic_id}`}>{t("forumTopic")}</a>:<PublishBuildDialog buildId={build.id} buildTitle={build.title} locale={locale} categories={categories}/>}<a href={`/${locale}/builds/${build.id}`}>{t("details")} →</a></div></footer></article>})}</div>}</main>}
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { requireVerifiedUser } from "@/modules/auth/guards";
+import { toggleBuildFavorite, toggleComponentFavorite } from "@/modules/builds/favorite-actions";
+import { deleteBuilds, renameBuild } from "@/modules/builds/build-actions";
+import { PublishBuildDialog } from "@/modules/builds/publish-build-dialog";
+import { ConfirmSubmitButton } from "@/shared/ui/confirm-submit-button";
+import type { AppLocale } from "@/shared/i18n/routing";
+type ComponentItem = { role: string; model: string; image?: string; [key: string]: unknown };
+type Category = { id: string; title: string; description: string };
+export default async function BuildsPage({ params }: { params: Promise<{ locale: AppLocale }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const { user, supabase } = await requireVerifiedUser(locale);
+  const t = await getTranslations("Builds");
+  const [
+    { data: allBuilds },
+    { data: favorites },
+    { data: componentFavorites },
+    { data: categoryData },
+  ] = await Promise.all([
+    supabase
+      .from("builds")
+      .select(
+        "id,title,budget_minor,currency,status,visibility,components,created_at,published_topic_id",
+      )
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase.from("build_favorites").select("build_id").eq("user_id", user.id),
+    supabase.from("component_favorites").select("build_id,component_key").eq("user_id", user.id),
+    supabase
+      .from("forum_categories")
+      .select("id,title,description")
+      .eq("language", locale)
+      .order("position"),
+  ]);
+  const categories = (categoryData ?? []) as Category[];
+  const builds =
+    allBuilds?.filter((build) => (build.components as ComponentItem[]).length >= 8) ?? [];
+  const favoriteIds = new Set(favorites?.map((item) => item.build_id) ?? []);
+  const componentKeys = new Set(
+    componentFavorites?.map((item) => `${item.build_id}:${item.component_key}`) ?? [],
+  );
+  return (
+    <main className="app-page">
+      <header className="app-page-header row">
+        <div>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h1>{t("title")}</h1>
+          <p>{t("copy")}</p>
+        </div>
+        <a className="button" href={`/${locale}/chat`}>
+          {t("new")}
+        </a>
+      </header>
+      {!builds.length ? (
+        <section className="empty-panel">
+          <span>▦</span>
+          <h2>{t("emptyTitle")}</h2>
+          <p>{t("emptyCopy")}</p>
+          <a className="button" href={`/${locale}/chat`}>
+            {t("emptyAction")}
+          </a>
+        </section>
+      ) : (
+        <div className="build-grid compact-build-grid">
+          {builds.map((build) => {
+            const components = build.components as ComponentItem[];
+            return (
+              <article className="build-card compact-build-card" key={build.id}>
+                <header>
+                  <span className={`status-pill ${build.status}`}>{t(build.status)}</span>
+                  <div className="build-card-actions">
+                    <span>{build.visibility === "public" ? t("public") : t("private")}</span>
+                    <form action={deleteBuilds}>
+                      <input type="hidden" name="locale" value={locale} />
+                      <input type="hidden" name="buildIds" value={build.id} />
+                      <ConfirmSubmitButton
+                        className="build-trash-button"
+                        title={t("deleteBuild")}
+                        aria-label={t("deleteBuild")}
+                        message={t("deleteOneConfirm")}
+                      >
+                        ♲
+                      </ConfirmSubmitButton>
+                    </form>
+                    <form action={toggleBuildFavorite}>
+                      <input type="hidden" name="locale" value={locale} />
+                      <input type="hidden" name="buildId" value={build.id} />
+                      <button
+                        className={`mini-favorite ${favoriteIds.has(build.id) ? "active" : ""}`}
+                      >
+                        {favoriteIds.has(build.id) ? "★" : "☆"}
+                      </button>
+                    </form>
+                  </div>
+                </header>
+                <div className="build-title-row">
+                  <h2>{build.title}</h2>
+                  <details className="rename-disclosure">
+                    <summary>{t("rename")}</summary>
+                    <form action={renameBuild}>
+                      <input type="hidden" name="locale" value={locale} />
+                      <input type="hidden" name="buildId" value={build.id} />
+                      <input
+                        name="title"
+                        defaultValue={build.title}
+                        minLength={2}
+                        maxLength={120}
+                        autoFocus
+                      />
+                      <button>{t("saveName")}</button>
+                    </form>
+                  </details>
+                </div>
+                <strong className="build-price">
+                  {new Intl.NumberFormat(locale, {
+                    style: "currency",
+                    currency: build.currency,
+                    maximumFractionDigits: 0,
+                  }).format(build.budget_minor / 100)}
+                </strong>
+                <details className="component-disclosure">
+                  <summary>
+                    <span>{t("componentCount", { count: components.length })}</span>
+                    <b>{t("expand")}</b>
+                  </summary>
+                  <div className="parts-list">
+                    {components.map((part) => (
+                      <div className="build-part-row" key={part.role}>
+                        {part.image && <img src={part.image} alt="" />}
+                        <a href={`/${locale}/builds/${build.id}`}>
+                          <span>{part.role}</span>
+                          <b>{part.model}</b>
+                        </a>
+                        <form action={toggleComponentFavorite}>
+                          <input type="hidden" name="locale" value={locale} />
+                          <input type="hidden" name="buildId" value={build.id} />
+                          <input type="hidden" name="componentKey" value={part.role} />
+                          <input type="hidden" name="snapshot" value={JSON.stringify(part)} />
+                          <button
+                            className={`mini-favorite ${componentKeys.has(`${build.id}:${part.role}`) ? "active" : ""}`}
+                          >
+                            {componentKeys.has(`${build.id}:${part.role}`) ? "★" : "☆"}
+                          </button>
+                        </form>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+                <footer>
+                  <span>
+                    {new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+                      new Date(build.created_at),
+                    )}
+                  </span>
+                  <div className="build-footer-actions">
+                    {build.published_topic_id ? (
+                      <a href={`/${locale}/community/topic/${build.published_topic_id}`}>
+                        {t("forumTopic")}
+                      </a>
+                    ) : (
+                      <PublishBuildDialog
+                        buildId={build.id}
+                        buildTitle={build.title}
+                        locale={locale}
+                        categories={categories}
+                      />
+                    )}
+                    <a href={`/${locale}/builds/${build.id}`}>{t("details")} →</a>
+                  </div>
+                </footer>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </main>
+  );
+}
