@@ -203,7 +203,7 @@ Feature code lives in `src/modules/*`, never in the route tree. Routes stay thin
 
 | Layer | Choice | Why |
 | --- | --- | --- |
-| Framework | Next.js 16 (App Router), React 19 | Server Components keep Supabase queries on the server; Server Actions remove a hand-written mutation API |
+| Framework | Next.js 16.4 (App Router), React 19 | Server Components keep Supabase queries on the server; Server Actions remove a hand-written mutation API |
 | Language | TypeScript 6, `strict` | Zero `tsc` errors is a CI gate, not an aspiration |
 | Backend | Supabase — Postgres, Auth, Storage | Row Level Security lets authorization live next to the data instead of in app middleware |
 | i18n | `next-intl` 4 | Locale-prefixed routing, server-side message loading, no client-side flash of untranslated content |
@@ -262,13 +262,13 @@ Nine ordered migrations build this up: identity foundation → chat/build demo �
 - **Email verification is enforced**, not merely requested: unverified sessions are rejected by the shared guard and by the chat API.
 - **Avatar uploads are constrained at the bucket level** — MIME allow-list and file-size limit in SQL, plus per-user path policies, so the storage rules hold even if the client is bypassed.
 - **Local Supabase secrets are not in version control.** `supabase/.temp/` and `.branches/` are git-ignored; `.env.example` documents every key by name with no values.
-- **Dependency audit runs in CI** at `--audit-level=high`.
+- **Dependency audit runs in CI.** Shipped dependencies must be clean at high/critical severity (`npm audit --omit=dev`); remaining advisories are DoS issues inside the ESLint tooling chain and are reported without blocking.
 
 Full threat model and hardening plan: [`docs/14-security.md`](./docs/14-security.md).
 
 ## Running it locally
 
-**Prerequisites:** Node.js 22+, Docker Desktop, and the [Supabase CLI](https://supabase.com/docs/guides/cli).
+**Prerequisites:** Node.js 22+ (CI runs 24), Docker Desktop, and the [Supabase CLI](https://supabase.com/docs/guides/cli).
 
 ```bash
 git clone https://github.com/Sebastian-null/PC.Build.Ai.git
@@ -303,7 +303,7 @@ npm run lint          # eslint . --max-warnings=0
 npm run build         # production build
 ```
 
-`main` is protected by the [CI workflow](./.github/workflows/ci.yml): formatting, types, lint, production build, and `npm audit`. Automated tests are the honest gap here — the testing strategy is written up in [`docs/16-testing.md`](./docs/16-testing.md) and is next after the live-model milestone.
+`main` is protected by the [CI workflow](./.github/workflows/ci.yml): formatting, types, lint, production build, and a dependency audit on Node 24. Automated tests are the honest gap here — the testing strategy is written up in [`docs/16-testing.md`](./docs/16-testing.md) and is next after the live-model milestone.
 
 ## Roadmap
 
